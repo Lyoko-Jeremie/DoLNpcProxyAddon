@@ -1,14 +1,19 @@
 import {NpcInfo} from "./winDef";
-import {NpcItem, NpcProxyManager} from "./DoLNpcProxyAddon";
+import {NpcItem, NpcProxyManager} from "./NpcProxyManager";
 import {clone} from "lodash";
 
 
-export class NpcListIndexProxy {
+export class NpcListProxyTag {
+    tag: string = "NpcListProxyTag";
+}
+
+export class NpcListIndexProxy extends NpcListProxyTag {
     thisProxy: typeof this;
 
     constructor(
         protected m: NpcProxyManager,
     ) {
+        super();
         this.thisProxy = new Proxy(this, {
             get: (target, prop) => {
                 if (typeof prop === "string") {
@@ -50,7 +55,7 @@ export class NpcListIndexProxy {
     [n: number]: NpcInfo;
 }
 
-export class NpcListProxy extends NpcListIndexProxy implements Array<NpcInfo> {
+export class NpcListReadOnlyProxy extends NpcListIndexProxy implements ReadonlyArray<NpcInfo> {
     constructor(
         m: NpcProxyManager,
     ) {
@@ -80,13 +85,6 @@ export class NpcListProxy extends NpcListIndexProxy implements Array<NpcInfo> {
         return [];
     }
 
-    copyWithin(target: number, start: number, end?: number): this {
-        // TODO
-        console.error(`[NpcListProxy] copyWithin not implemented!`,);
-        throw new Error(`[NpcListProxy] copyWithin not implemented!`);
-        return this;
-    }
-
     entries(): IterableIterator<[number, NpcInfo]> {
         return this.m.entriesIndex();
     }
@@ -97,13 +95,6 @@ export class NpcListProxy extends NpcListIndexProxy implements Array<NpcInfo> {
         const arr = this.m.readList();
         const r = arr.map(T => T.npcInfo);
         return arr.every(T => predicate(T.npcInfo, T.index, r));
-    }
-
-    fill(value: NpcInfo, start?: number, end?: number): this {
-        // TODO
-        console.error(`[NpcListProxy] fill not implemented!`,);
-        throw new Error(`[NpcListProxy] fill not implemented!`);
-        return this;
     }
 
     filter<S extends NpcInfo>(predicate: (value: NpcInfo, index: number, array: NpcInfo[]) => value is S, thisArg?: any): S[];
@@ -178,19 +169,6 @@ export class NpcListProxy extends NpcListIndexProxy implements Array<NpcInfo> {
         return ra;
     }
 
-    pop(): NpcInfo | undefined {
-        // TODO
-        console.error(`[NpcListProxy] pop not implemented!`,);
-        throw new Error(`[NpcListProxy] pop not implemented!`);
-        return undefined;
-    }
-
-    push(...items: NpcInfo[]): number {
-        // TODO
-        console.error(`[NpcListProxy] pop not implemented!`,);
-        throw new Error(`[NpcListProxy] pop not implemented!`);
-        return 0;
-    }
 
     reduce(callbackfn: (previousValue: NpcInfo, currentValue: NpcInfo, currentIndex: number, array: NpcInfo[]) => NpcInfo): NpcInfo;
     reduce(callbackfn: (previousValue: NpcInfo, currentValue: NpcInfo, currentIndex: number, array: NpcInfo[]) => NpcInfo, initialValue: NpcInfo): NpcInfo;
@@ -218,6 +196,69 @@ export class NpcListProxy extends NpcListIndexProxy implements Array<NpcInfo> {
         return R;
     }
 
+    slice(start?: number, end?: number): NpcInfo[] {
+        // TODO
+        console.error(`[NpcListProxy] slice not implemented!`,);
+        throw new Error(`[NpcListProxy] slice not implemented!`);
+        return this.m.readList().slice(start, end).map(T => T.npcInfo);
+    }
+
+    some(predicate: (value: NpcInfo, index: number, array: NpcInfo[]) => unknown, thisArg?: any): boolean {
+        const arr = this.m.readList();
+        const r = arr.map(T => T.npcInfo);
+        for (const a of arr) {
+            if (predicate(a.npcInfo, a.index, r)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    values(): IterableIterator<NpcInfo> {
+        return this.m.values();
+    }
+
+}
+
+export class NpcListProxy extends NpcListReadOnlyProxy implements Array<NpcInfo> {
+    constructor(
+        m: NpcProxyManager,
+    ) {
+        super(m);
+    }
+
+    pop(): NpcInfo | undefined {
+        // redirect to parent
+        return this.m.pop()?.npcInfo;
+    }
+
+    push(...items: NpcInfo[]): number {
+        // redirect to parent
+        for (const item of items) {
+            this.m.push(item);
+        }
+        return this.length;
+    }
+
+    // @ts-ignore
+    readonly [Symbol.unscopables](): { [K in keyof (typeof this)[]]?: boolean } {
+        return {};
+    }
+
+    copyWithin(target: number, start: number, end?: number): this {
+        // TODO
+        console.error(`[NpcListProxy] copyWithin not implemented!`,);
+        throw new Error(`[NpcListProxy] copyWithin not implemented!`);
+        return this;
+    }
+
+    fill(value: NpcInfo, start?: number, end?: number): this {
+        // TODO
+        console.error(`[NpcListProxy] fill not implemented!`,);
+        throw new Error(`[NpcListProxy] fill not implemented!`);
+        return this;
+    }
+
     reverse(): NpcInfo[] {
         // TODO
         console.error(`[NpcListProxy] reverse not implemented!`,);
@@ -232,23 +273,6 @@ export class NpcListProxy extends NpcListIndexProxy implements Array<NpcInfo> {
         return undefined;
     }
 
-    slice(start?: number, end?: number): NpcInfo[] {
-        // TODO
-        console.error(`[NpcListProxy] slice not implemented!`,);
-        throw new Error(`[NpcListProxy] slice not implemented!`);
-        return [];
-    }
-
-    some(predicate: (value: NpcInfo, index: number, array: NpcInfo[]) => unknown, thisArg?: any): boolean {
-        const arr = this.m.readList();
-        const r = arr.map(T => T.npcInfo);
-        for (const a of arr) {
-            if (predicate(a.npcInfo, a.index, r)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     sort(compareFn?: (a: NpcInfo, b: NpcInfo) => number): this {
         // TODO
@@ -271,10 +295,6 @@ export class NpcListProxy extends NpcListIndexProxy implements Array<NpcInfo> {
         console.error(`[NpcListProxy] unshift not implemented!`,);
         throw new Error(`[NpcListProxy] unshift not implemented!`);
         return 0;
-    }
-
-    values(): IterableIterator<NpcInfo> {
-        return this.m.values();
     }
 
 }

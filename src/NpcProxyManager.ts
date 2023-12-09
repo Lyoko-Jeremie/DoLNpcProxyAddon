@@ -12,16 +12,8 @@ export interface NpcItem {
     npcInfo: NpcInfo,
 }
 
-export class NpcProxyManager extends CustomReadonlyMapHelper<number, NpcInfo> {
-    private logger: LogWrapper;
-
-    constructor(
-        public gSC2DataManager: SC2DataManager,
-        public gModUtils: ModUtils,
-    ) {
-        super();
-        this.logger = gModUtils.getLogger();
-    }
+export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number, NpcInfo> {
+    protected abstract logger: LogWrapper;
 
     private nextId = 0;
 
@@ -101,6 +93,22 @@ export class NpcProxyManager extends CustomReadonlyMapHelper<number, NpcInfo> {
         }
         return false;
     }
+
+
+}
+
+export class NpcProxyManager extends NpcProxyManagerCore {
+    protected logger: LogWrapper;
+
+    constructor(
+        public gSC2DataManager: SC2DataManager,
+        public gModUtils: ModUtils,
+    ) {
+        super();
+        this.logger = gModUtils.getLogger();
+    }
+
+    // TODO init
 
 }
 

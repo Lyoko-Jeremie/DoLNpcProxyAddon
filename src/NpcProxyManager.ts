@@ -3,12 +3,21 @@ import type {SC2DataManager} from "../../../dist-BeforeSC2/SC2DataManager";
 import type {ModUtils} from "../../../dist-BeforeSC2/Utils";
 import {isArray, isNil, isNumber, isString} from 'lodash';
 import {NpcInfo} from "./winDef";
-import {CustomReadonlyMapHelper} from "./CustomReadonlyMapHelper";
+import {CustomIterableIterator, CustomReadonlyMapHelper} from "./CustomReadonlyMapHelper";
 
 
 export interface NpcItem {
+    /**
+     * the index of game `NPCName` array
+     */
     index: number,
+    /**
+     * the name of game `NPCName.nam` or `NPCNameList`
+     */
     name: string,
+    /**
+     * the item of game `NPCName` item
+     */
     npcInfo: NpcInfo,
 }
 
@@ -59,6 +68,10 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
         }
     }
 
+    /**
+     *
+     * @param key get by `NpcItem.name` or `NpcItem.index`
+     */
     getNpcItemRef(key: string | number): NpcItem | undefined {
         if (isString(key)) {
             return this.npc.get(key);
@@ -69,6 +82,11 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
         return undefined;
     }
 
+    /**
+     * change a item in-place
+     * @param k  the `NpcItem.name` or `NpcItem.index`
+     * @param npcInfo
+     */
     set(k: string | number, npcInfo: NpcInfo) {
         this.checkDataValid();
         if (this.has(k)) {
@@ -82,6 +100,17 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
         console.error(`[NpcProxyManager] set npc[${k}] not found!`, [k, npcInfo]);
     }
 
+    /**
+     * add at back
+     * @param npcInfo
+     */
+    add(npcInfo: NpcInfo) {
+        this.push(npcInfo);
+    }
+
+    /**
+     * pop_back
+     */
     pop() {
         this.checkDataValid();
         const npcItem = this.npcList.pop();
@@ -96,6 +125,10 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
         return npcItem;
     }
 
+    /**
+     * push_back
+     * @param npcInfo
+     */
     push(npcInfo: NpcInfo) {
         this.checkDataValid();
         if (this.npc.has(npcInfo.nam)) {
@@ -122,14 +155,39 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
         return this.npc.size;
     }
 
+    entriesName(): IterableIterator<[string, NpcInfo]> {
+        return new CustomIterableIterator<[string, NpcInfo], typeof this, NpcItem[]>(
+            this,
+            (index, p, ito) => {
+                if (index >= ito.cache.length) {
+                    return {
+                        done: true,
+                        value: undefined,
+                    };
+                } else {
+                    const n = ito.cache[index];
+                    return {
+                        done: index >= ito.cache.length,
+                        value: [n.name, n.npcInfo],
+                    };
+                }
+            },
+            this.npcList,
+        );
+    }
+
     entriesIndex(): IterableIterator<[number, NpcInfo]> {
-        return this.npcList.map(T => T.npcInfo).entries();
+        return this.entries();
     }
 
     entries(): IterableIterator<[number, NpcInfo]> {
         return this.npcList.map(T => T.npcInfo).entries();
     }
 
+    /**
+     *
+     * @param key get by `NpcItem.name` or `NpcItem.index`
+     */
     get(key: string | number): NpcInfo | undefined {
         if (isString(key)) {
             return this.npc.get(key)?.npcInfo;
@@ -140,6 +198,10 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
         return undefined;
     }
 
+    /**
+     *
+     * @param key get by `NpcItem.name` or `NpcItem.index`
+     */
     has(key: string | number): boolean {
         if (isString(key)) {
             return this.npc.has(key);

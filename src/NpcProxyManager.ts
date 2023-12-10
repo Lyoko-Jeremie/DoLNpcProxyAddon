@@ -19,6 +19,10 @@ export interface NpcItem {
      * the item of game `NPCName` item
      */
     npcInfo: NpcInfo,
+    /**
+     * the alias of name, example, for CN name
+     */
+    alias: string[],
 }
 
 export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number, NpcInfo> {
@@ -29,8 +33,9 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
     private npc: Map<string, NpcItem> = new Map<string, NpcItem>();
     private npcIndex: Map<number, NpcItem> = new Map<number, NpcItem>();
     private npcList: NpcItem[] = [];
+    private npcAlias: Map<string, NpcItem> = new Map<string, NpcItem>();
 
-    checkDataValid() {
+    public checkDataValid() {
         // check `this.npc` / `this.npcIndex` / `this.npcList` is same , and `this.npcList` is sorted by `NpcItem.index`
         if (this.npc.size !== this.npcIndex.size || this.npc.size !== this.npcList.length) {
             console.error(`[NpcProxyManager] checkDataValid failed! size not same.`, [this.npc, this.npcIndex, this.npcList]);
@@ -72,9 +77,9 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
      *
      * @param key get by `NpcItem.name` or `NpcItem.index`
      */
-    getNpcItemRef(key: string | number): NpcItem | undefined {
+    public getNpcItemRef(key: string | number): NpcItem | undefined {
         if (isString(key)) {
-            return this.npc.get(key);
+            return this.npc.get(key) || this.npcAlias.get(key);
         }
         if (isNumber(key)) {
             return this.npcIndex.get(key);
@@ -87,13 +92,17 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
      * @param k  the `NpcItem.name` or `NpcItem.index`
      * @param npcInfo
      */
-    set(k: string | number, npcInfo: NpcInfo) {
+    public set(k: string | number, npcInfo: NpcInfo) {
         this.checkDataValid();
         if (this.has(k)) {
             const npcItem = this.getNpcItemRef(k)!;
-            this.npc.set(npcItem.name, npcItem);
-            this.npcIndex.set(npcItem.index, npcItem);
-            this.npcList.splice(this.npcList.findIndex(T => T.name === npcItem.name), 1, npcItem);
+            npcItem.npcInfo = npcInfo;
+            // this.npc.set(npcItem.name, npcItem);
+            // this.npcIndex.set(npcItem.index, npcItem);
+            // this.npcList.splice(this.npcList.findIndex(T => T.name === npcItem.name), 1, npcItem);
+            // for (const alias of npcItem.alias) {
+            //     this.npcAlias.set(alias, npcItem);
+            // }
             this.checkDataValid();
             return;
         }
@@ -104,14 +113,29 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
      * add at back
      * @param npcInfo
      */
-    add(npcInfo: NpcInfo) {
+    public add(npcInfo: NpcInfo) {
         this.push(npcInfo);
+    }
+
+    public addAlias(npcK: string | number, alias: string) {
+        this.checkDataValid();
+        const npcItem = this.getNpcItemRef(npcK);
+        if (isNil(npcItem)) {
+            console.error(`[NpcProxyManager] addAlias npc[${npcK}] not found!`, [npcK, alias]);
+            this.logger.error(`[NpcProxyManager] addAlias npc[${npcK}] not found!`);
+            return;
+        }
+        if (!npcItem.alias.includes(alias)) {
+            npcItem.alias.push(alias);
+            this.npcAlias.set(alias, npcItem);
+        }
+        this.checkDataValid();
     }
 
     /**
      * pop_back
      */
-    pop() {
+    public pop() {
         this.checkDataValid();
         const npcItem = this.npcList.pop();
         if (isNil(npcItem)) {
@@ -121,6 +145,9 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
         }
         this.npc.delete(npcItem.name);
         this.npcIndex.delete(npcItem.index);
+        for (const alias of npcItem.alias) {
+            this.npcAlias.delete(alias);
+        }
         this.checkDataValid();
         return npcItem;
     }
@@ -129,7 +156,7 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
      * push_back
      * @param npcInfo
      */
-    push(npcInfo: NpcInfo) {
+    public push(npcInfo: NpcInfo) {
         this.checkDataValid();
         if (this.npc.has(npcInfo.nam)) {
             console.error(`[NpcProxyManager] push npc[${npcInfo.nam}] already exists!`, [npcInfo]);
@@ -140,6 +167,7 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
             index: this.nextId++,
             name: npcInfo.nam,
             npcInfo: npcInfo,
+            alias: [],
         };
         this.npc.set(npcItem.name, npcItem);
         this.npcIndex.set(npcItem.index, npcItem);
@@ -147,11 +175,15 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
         this.checkDataValid();
     }
 
-    readList(): ReadonlyArray<NpcItem> {
+    public readList(): ReadonlyArray<NpcItem> {
         return this.npcList;
     }
 
-    get size(): number {
+    public get size(): number {
+        return this.npc.size;
+    }
+
+    public get length(): number {
         return this.npc.size;
     }
 
@@ -180,7 +212,7 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
         return this.entries();
     }
 
-    entries(): IterableIterator<[number, NpcInfo]> {
+    public entries(): IterableIterator<[number, NpcInfo]> {
         return this.npcList.map(T => T.npcInfo).entries();
     }
 
@@ -188,9 +220,9 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
      *
      * @param key get by `NpcItem.name` or `NpcItem.index`
      */
-    get(key: string | number): NpcInfo | undefined {
+    public get(key: string | number): NpcInfo | undefined {
         if (isString(key)) {
-            return this.npc.get(key)?.npcInfo;
+            return this.npc.get(key)?.npcInfo || this.npcAlias.get(key)?.npcInfo;
         }
         if (isNumber(key)) {
             return this.npcIndex.get(key)?.npcInfo;
@@ -202,9 +234,9 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
      *
      * @param key get by `NpcItem.name` or `NpcItem.index`
      */
-    has(key: string | number): boolean {
+    public has(key: string | number): boolean {
         if (isString(key)) {
-            return this.npc.has(key);
+            return this.npc.has(key) || this.npcAlias.has(key);
         }
         if (isNumber(key)) {
             return this.npcIndex.has(key);

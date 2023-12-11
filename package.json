@@ -6,16 +6,24 @@
   "scripts": {
     "ts:w": "tsc -w -p ./src_boot/tsconfig.json",
     "webpack:w": "webpack -w -c ./webpack.config.js",
-    "======================": "",
+    "======================1": "",
+    "test:w": "tsc -w -p ./test/tsconfig.json",
+    "test:run": "mocha ./dist-test/test.js",
+    "======================2": "",
     "build:ts": "tsc -p ./src_boot/tsconfig.json",
     "build:webpack": "webpack -c ./webpack.config.js"
   },
   "packageManager": "yarn@3.4.1",
   "dependencies": {
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
+    "chai": "^4.3.10",
     "json5": "^2.2.3",
     "jszip": "^3.10.1",
     "lodash": "^4.17.21",
-    "moment": "^2.29.4"
+    "mocha": "^10.2.0",
+    "moment": "^2.29.4",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@types/jquery": "^3.5.19",

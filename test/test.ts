@@ -5,7 +5,9 @@ import {NpcListProxy} from '../src/NpcListProxy';
 
 import type {LogWrapper} from "../../../dist-BeforeSC2/ModLoadController";
 import type {NpcInfo} from "../src/winDef";
-import * as console from "console";
+
+// https://mochajs.org/#-require-module-r-module
+// --require ts-node/register
 
 class ConsoleLogger {
     logList: { t: 'log' | 'warn' | 'err', m: string }[] = [];

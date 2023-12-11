@@ -71,6 +71,24 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
                 return false;
             }
         }
+        // check addAlias
+        for (const [alias, npcItem] of this.npcAlias) {
+            if (!npcItem.alias.includes(alias)) {
+                console.error(`[NpcProxyManager] checkDataValid failed! npcAlias not same.`, [alias, npcItem]);
+                this.logger.error(`[NpcProxyManager] checkDataValid failed! npcAlias not same.`);
+                return false;
+            }
+        }
+        for (const npcItem of this.npcList) {
+            for (const alias of npcItem.alias) {
+                if (this.npcAlias.get(alias) !== npcItem) {
+                    console.error(`[NpcProxyManager] checkDataValid failed! npcAlias not same.`, [alias, npcItem]);
+                    this.logger.error(`[NpcProxyManager] checkDataValid failed! npcAlias not same.`);
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**

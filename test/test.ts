@@ -1,11 +1,11 @@
 import {expect, assert, should} from 'chai';
-import {it, describe} from 'mocha';
+import {it, describe, beforeEach} from 'mocha';
 import {NpcItem, NpcProxyManager, NpcProxyManagerCore} from '../src/NpcProxyManager';
 import {NpcListProxy, NpcListReadOnlyProxy} from '../src/NpcListProxy';
 
 import type {LogWrapper} from "../../../dist-BeforeSC2/ModLoadController";
 import type {NpcInfo} from "../src/winDef";
-import * as console from "console";
+import {NpcFastAccessor, NpcFastAccessorInterface} from "../src/NpcFastAccessor";
 
 // https://mochajs.org/#-require-module-r-module
 // --require ts-node/register
@@ -273,6 +273,36 @@ describe('NpcProxyManagerTest', function () {
 
         });
 
+    });
+
+
+    describe('NpcProxyManagerTest NpcFastAccessor', function () {
+        let a: NpcProxyManager;
+        let ac: NpcFastAccessorInterface;
+        beforeEach(function () {
+            a = new NpcProxyManagerTest() as unknown as NpcProxyManager;
+
+            a.add(createNpcInfo("a"));
+            expect(a.checkDataValid()).to.be.true;
+            a.add(createNpcInfo("b"));
+            expect(a.checkDataValid()).to.be.true;
+
+            ac = new NpcFastAccessor(a) as unknown as NpcFastAccessorInterface;
+        });
+
+        it('can fast index by index/field', function () {
+
+            // console.log(a);
+            // console.log(ac);
+
+            expect(ac[0]).to.be.deep.equal({nam: "a"});
+            expect(ac[1]).to.be.deep.equal({nam: "b"});
+            expect(ac[2]).to.be.undefined;
+            expect(ac.a).to.be.deep.equal({nam: "a"});
+            expect(ac.b).to.be.deep.equal({nam: "b"});
+            expect(ac.c).to.be.undefined;
+
+        });
     });
 
 });

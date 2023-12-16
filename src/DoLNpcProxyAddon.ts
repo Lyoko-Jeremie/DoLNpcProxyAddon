@@ -6,6 +6,7 @@ import type {ModBootJson, ModInfo} from "../../../dist-BeforeSC2/ModLoader";
 import {isArray, isNil, isNumber, isString} from 'lodash';
 import {NpcProxyManager} from "./NpcProxyManager";
 import {NpcListProxy} from "./NpcListProxy";
+import {NpcFastAccessor} from "./NpcFastAccessor";
 
 export class DoLNpcProxyAddon {
     private logger: LogWrapper;
@@ -17,10 +18,12 @@ export class DoLNpcProxyAddon {
         this.logger = gModUtils.getLogger();
         this.npcProxyManager = new NpcProxyManager(gSC2DataManager, gModUtils);
         this.npcListProxy = new NpcListProxy(this.npcProxyManager);
+        this.npcFastAccessor = new NpcFastAccessor(this.npcProxyManager);
     }
 
     npcProxyManager: NpcProxyManager;
     npcListProxy: NpcListProxy;
+    npcFastAccessor: NpcFastAccessor;
 
     init() {
         window.npcProxyManager = this.npcProxyManager;

@@ -7,6 +7,8 @@ declare global {
         modUtils: ModUtils;
         modSC2DataManager: SC2DataManager;
 
+        modDoLNpcProxyAddon: DoLNpcProxyAddon;
+
         jQuery: jQuery;
     }
 }

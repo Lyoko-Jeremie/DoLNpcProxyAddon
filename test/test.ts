@@ -27,6 +27,10 @@ class ConsoleLogger {
         this.logList.push({t: 'err', m: s});
         console.error(s);
     }
+
+    clean() {
+        this.logList = [];
+    }
 }
 
 /**
@@ -144,6 +148,8 @@ describe('NpcProxyManagerTest', function () {
             expect((a.logger as ConsoleLogger).logList.find(
                 v => v.t === 'err' && v.m.includes("already exists"))
             ).to.be.not.undefined;
+            console.log('can add duplicate need silently ignore, but make error log, ok.');
+            (a.logger as ConsoleLogger).clean();
 
         });
 
@@ -183,10 +189,10 @@ describe('NpcProxyManagerTest', function () {
 
     describe('NpcProxyManagerTest NpcListReadOnlyProxy', function () {
 
-        let a: NpcProxyManager;
+        let a: NpcProxyManagerTest;
         let l: ReadonlyArray<NpcInfo>;
         beforeEach(function () {
-            a = new NpcProxyManagerTest() as unknown as NpcProxyManager;
+            a = new NpcProxyManagerTest();
 
             a.add(createNpcInfo("a"));
             expect(a.checkDataValid()).to.be.true;
@@ -194,7 +200,7 @@ describe('NpcProxyManagerTest', function () {
             expect(a.checkDataValid()).to.be.true;
 
             // l = new NpcListReadOnlyProxy(a);
-            l = new NpcListProxy(a);
+            l = new NpcListProxy(a as unknown as NpcProxyManager);
         });
 
         it('can base array index', function () {
@@ -252,7 +258,7 @@ describe('NpcProxyManagerTest', function () {
 
         });
 
-        it('cannot push duplicate', function () {
+        it('cannot push duplicate, make error log', function () {
             const ll = l as NpcInfo[];
 
             expect(ll.length).to.be.equal(2);
@@ -270,6 +276,12 @@ describe('NpcProxyManagerTest', function () {
             ll.pop();
             expect(ll.length).to.be.equal(2);
             expect(ll.at(2)).to.be.undefined;
+
+            expect((a.logger as ConsoleLogger).logList.find(
+                v => v.t === 'err' && v.m.includes("already exists"))
+            ).to.be.not.undefined;
+            console.log('cannot push duplicate, make error log, ok.');
+            (a.logger as ConsoleLogger).clean();
 
         });
 

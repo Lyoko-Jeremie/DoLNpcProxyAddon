@@ -18,7 +18,7 @@ export class NpcListIndexProxy extends NpcListProxyTag {
             get: (target, prop) => {
                 if (typeof prop === "string") {
                     const index = Number(prop);
-                    if (isNaN(index)) {
+                    if (!isNaN(index)) {
                         return this.m.get(index);
                     } else {
                         const r = this.m.get(prop);
@@ -62,10 +62,7 @@ export class NpcListReadOnlyProxy extends NpcListIndexProxy implements ReadonlyA
         super(m);
     }
 
-    // @ts-ignore
-    readonly [Symbol.unscopables](): { [K in keyof (typeof this)[]]?: boolean } {
-        return {};
-    }
+    readonly [Symbol.unscopables] = {};
 
     get length(): number {
         return this.m.size;
@@ -102,7 +99,7 @@ export class NpcListReadOnlyProxy extends NpcListIndexProxy implements ReadonlyA
     filter(predicate: any, thisArg?: any): any {
         const arr = this.m.readList();
         const r = arr.map(T => T.npcInfo);
-        return arr.filter(T => predicate(T.npcInfo, T.index, r));
+        return arr.filter(T => predicate(T.npcInfo, T.index, r)).map(T => T.npcInfo);
     }
 
     find<S extends NpcInfo>(predicate: (value: NpcInfo, index: number, obj: NpcInfo[]) => value is S, thisArg?: any): S | undefined;
@@ -110,7 +107,7 @@ export class NpcListReadOnlyProxy extends NpcListIndexProxy implements ReadonlyA
     find(predicate: any, thisArg?: any): any {
         const arr = this.m.readList();
         const r = arr.map(T => T.npcInfo);
-        return arr.find(T => predicate(T.npcInfo, T.index, r));
+        return arr.find(T => predicate(T.npcInfo, T.index, r))?.npcInfo;
     }
 
     findIndex(predicate: (value: NpcInfo, index: number, obj: NpcInfo[]) => unknown, thisArg?: any): number {
@@ -134,6 +131,11 @@ export class NpcListReadOnlyProxy extends NpcListIndexProxy implements ReadonlyA
     }
 
     forEach(callbackfn: (value: NpcInfo, index: number, array: NpcInfo[]) => void, thisArg?: any): void {
+        const arr = this.m.readList();
+        const r = arr.map(T => T.npcInfo);
+        for (const a of arr) {
+            callbackfn(a.npcInfo, a.index, r);
+        }
     }
 
     includes(searchElement: NpcInfo, fromIndex?: number): boolean {
@@ -240,10 +242,7 @@ export class NpcListProxy extends NpcListReadOnlyProxy implements Array<NpcInfo>
         return this.length;
     }
 
-    // @ts-ignore
-    readonly [Symbol.unscopables](): { [K in keyof (typeof this)[]]?: boolean } {
-        return {};
-    }
+    readonly [Symbol.unscopables] = {};
 
     copyWithin(target: number, start: number, end?: number): this {
         // TODO

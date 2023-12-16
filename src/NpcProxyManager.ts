@@ -35,6 +35,15 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
     private npcList: NpcItem[] = [];
     private npcAlias: Map<string, NpcItem> = new Map<string, NpcItem>();
 
+    cleanAll() {
+        this.nextId = 0;
+        this.npc.clear();
+        this.npcIndex.clear();
+        this.npcList = [];
+        this.npcAlias.clear();
+        this.checkDataValid();
+    }
+
     public checkDataValid() {
         // check `this.npc` / `this.npcIndex` / `this.npcList` is same , and `this.npcList` is sorted by `NpcItem.index`
         if (this.npc.size !== this.npcIndex.size || this.npc.size !== this.npcList.length) {
@@ -276,7 +285,35 @@ export class NpcProxyManager extends NpcProxyManagerCore {
         this.logger = gModUtils.getLogger();
     }
 
-    // TODO init
+    reset(
+        NPCName: NpcInfo[],
+        NPCNameList: string[],
+    ) {
+        this.cleanAll();
+        for (const npcInfo of NPCName) {
+            this.push(npcInfo);
+        }
+        for (const [i, n] of this) {
+            if (NPCNameList[i] !== n.nam) {
+                console.error(`[NpcProxyManager] reset failed! NPCNameList[${i}] !== NPCName[${i}].nam`, [NPCNameList[i], n.nam]);
+                this.logger.error(`[NpcProxyManager] reset failed! NPCNameList[${i}] !== NPCName[${i}].nam`);
+            }
+            if (NPCName[i] !== n) {
+                console.error(`[NpcProxyManager] reset failed! NPCName[${i}] !== NPCName[${i}]`, [NPCName[i], n]);
+                this.logger.error(`[NpcProxyManager] reset failed! NPCName[${i}] !== NPCName[${i}]`);
+            }
+        }
+        for (const T of this.readList()) {
+            if (NPCNameList[T.index] !== T.name) {
+                console.error(`[NpcProxyManager] reset failed! NPCNameList[${T.index}] !== NPCName[${T.index}].nam`, [NPCNameList[T.index], T, T.name]);
+                this.logger.error(`[NpcProxyManager] reset failed! NPCNameList[${T.index}] !== NPCName[${T.index}].nam`);
+            }
+            if (NPCName[T.index] !== T.npcInfo) {
+                console.error(`[NpcProxyManager] reset failed! NPCName[${T.index}] !== NPCName[${T.index}]`, [NPCName[T.index], T, T.npcInfo]);
+                this.logger.error(`[NpcProxyManager] reset failed! NPCName[${T.index}] !== NPCName[${T.index}]`);
+            }
+        }
+    }
 
 }
 

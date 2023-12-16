@@ -5,8 +5,9 @@ import type {ModUtils} from "../../../dist-BeforeSC2/Utils";
 import type {ModBootJson, ModInfo} from "../../../dist-BeforeSC2/ModLoader";
 import {isArray, isNil, isNumber, isString} from 'lodash';
 import {NpcProxyManager} from "./NpcProxyManager";
-import {NpcListProxy} from "./NpcListProxy";
+import {NpcListProxy, NpcListProxyWithSc2Polyfill} from "./NpcListProxy";
 import {NpcFastAccessor} from "./NpcFastAccessor";
+import {NpcNameListProxy, NpcNameListProxyWithSc2Polyfill} from "./NpcNameListProxy";
 
 export class DoLNpcProxyAddon {
     private logger: LogWrapper;
@@ -17,15 +18,55 @@ export class DoLNpcProxyAddon {
     ) {
         this.logger = gModUtils.getLogger();
         this.npcProxyManager = new NpcProxyManager(gSC2DataManager, gModUtils);
-        this.npcListProxy = new NpcListProxy(this.npcProxyManager);
+        this.npcListProxy = new NpcListProxyWithSc2Polyfill(this.npcProxyManager);
+        this.npcNameListProxy = new NpcNameListProxyWithSc2Polyfill(this.npcProxyManager);
         this.npcFastAccessor = new NpcFastAccessor(this.npcProxyManager);
     }
 
     npcProxyManager: NpcProxyManager;
-    npcListProxy: NpcListProxy;
+    npcListProxy: NpcListProxyWithSc2Polyfill;
+    npcNameListProxy: NpcNameListProxyWithSc2Polyfill;
     npcFastAccessor: NpcFastAccessor;
+
+    setupProxy() {
+        if (isNil(window.V)) {
+            console.error('[DoLNpcProxyAddon] setupProxy() window.V is nil. maybe SugarCube not init.');
+            return;
+        }
+        if (isNil(window.V.NPCName) || isNil(window.V.NPCNameList)) {
+            console.error('[DoLNpcProxyAddon] setupProxy() window.V.NPCName or window.V.NPCNameList is nil. maybe Game not init end.');
+            return;
+        }
+        if (
+            (window.V.NPCName as NpcListProxy)?.tag === 'NpcListProxyTag' &&
+            (window.V.NPCNameList as NpcNameListProxy)?.tag === 'NpcNameListProxyTag' &&
+            !isNil(window.V.npcs) && window.V.npcs.tag === 'NpcFastAccessorTag'
+        ) {
+            // was setup ok
+            return;
+        }
+
+        console.log('[DoLNpcProxyAddon] setupProxy()', [window.V.NPCName, window.V.NPCNameList, window.V.npcs]);
+
+        // use V.NPCNameList, V.NPCName to reset this.npcProxyManager
+        this.npcProxyManager.reset(
+            window.V.NPCName,
+            window.V.NPCNameList
+        );
+
+        // TODO check the V.NPCNameList, V.NPCName
+
+        window.V.NPCName = this.npcListProxy;
+        window.V.NPCNameList = this.npcNameListProxy;
+        window.V.npcs = this.npcFastAccessor;
+    }
+
+    beforeFirstPassageInit() {
+
+    }
 
     init() {
         window.npcProxyManager = this.npcProxyManager;
     }
+
 }

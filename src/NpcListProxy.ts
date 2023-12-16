@@ -40,7 +40,7 @@ export class NpcListIndexProxy extends NpcListProxyTag {
                         return false;
                     } else {
                         if (this.m.has(prop)) {
-                            this.m.set(index, value);
+                            this.m.set(prop, value);
                             return true;
                         }
                     }
@@ -52,6 +52,7 @@ export class NpcListIndexProxy extends NpcListProxyTag {
         return this.thisProxy;
     }
 
+    // 声明当前对象为数组 like
     [n: number]: NpcInfo;
 }
 

@@ -65,12 +65,30 @@ $npcs['newC'] = {
     /* the new npc info */
 };
 
+V.NPCName.push({
+    nam: 'newD',
+    love: 100,
+    /* the new npc info */
+});
+
 // now the npc `newA` can work as normal
 $npcs["newA"]
 $npcs.newA.love
+$npcs.newB.love
+$npcs.newC.love
+$npcs.newD.love
 
 // to get the index of `newA`
 window.npcProxyManager.getNpcItemRef('newA').index;
 
 ```
 
+special case
+```javascript
+
+V.$NPCNameList.push('newE');  // 1 no effect
+$npcs.newE.love // 2 error
+$npcs["newE"] = { /* the new npc info */ } // 3 ok
+$npcs.newE.love // 4 ok
+
+```

@@ -92,7 +92,7 @@ interface V {
 }
 
 interface C {
-    // npc: NpcFastAccessor;
+    npc: NpcFastAccessor;
 }
 
 declare global {

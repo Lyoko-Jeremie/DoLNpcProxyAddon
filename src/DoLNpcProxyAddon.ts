@@ -63,7 +63,7 @@ export class DoLNpcProxyAddon {
         window.V.NPCName = this.npcListProxy;
         window.V.NPCNameList = this.npcNameListProxy;
         window.V.npcs = this.npcFastAccessor;
-        // window.C.npc = this.npcFastAccessor;
+        window.C.npc = this.npcFastAccessor;
     }
 
     beforeFirstPassageInit() {

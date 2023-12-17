@@ -108,7 +108,7 @@ export class NpcFastAccessor extends NpcFastAccessorBase implements MyClassPrope
                             this.m.set(prop, value);
                             return true;
                         } else {
-                            this.m.set(prop, value);
+                            this.m.push(value);
                         }
                     }
                 }

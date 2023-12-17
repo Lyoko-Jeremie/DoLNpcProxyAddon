@@ -224,6 +224,11 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
      */
     public push(npcInfo: NpcInfo) {
         this.checkDataValid();
+        if (!isString(npcInfo.nam)) {
+            console.error(`[NpcProxyManager] push npc[${npcInfo.nam}] name is not string!`, [npcInfo]);
+            this.logger.error(`[NpcProxyManager] push npc[${npcInfo.nam}] name is not string!`);
+            return;
+        }
         if (this.npc.has(npcInfo.nam)) {
             console.error(`[NpcProxyManager] push npc[${npcInfo.nam}] already exists!`, [npcInfo]);
             this.logger.error(`[NpcProxyManager] push npc[${npcInfo.nam}] already exists!`);

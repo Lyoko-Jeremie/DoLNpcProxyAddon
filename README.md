@@ -86,9 +86,9 @@ window.npcProxyManager.getNpcItemRef('newA').index;
 special case
 ```javascript
 
-V.$NPCNameList.push('newE');  // 1 no effect
-$npcs.newE.love // 2 error
-$npcs["newE"] = { /* the new npc info */ } // 3 ok
-$npcs.newE.love // 4 ok
+V.NPCNameList.push('newE');  // 1 no effect
+V.NPCName.newE.love // 2 error
+V.NPCName["newE"] = { /* the new npc info */ } // 3 ok
+V.NPCName.newE.love // 4 ok
 
 ```

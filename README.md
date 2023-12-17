@@ -7,29 +7,35 @@ to use (read / access)
 
 // the old way
 // still will work same as before
-$NPCName[$NPCNameList.indexOf("Sydney")].purity
+V.NPCName[V.NPCNameList.indexOf("Sydney")].purity
 
 // read by name (same as above)
-$npcs["Sydney"].purity
+V.npcs["Sydney"].purity
 // read by name (if name only a word) (same as above)
-$npcs.Sydney.purity
+V.npcs.Sydney.purity
 // read by index (same as above)
-$npcs[28].purity
+V.npcs[28].purity
 
 // write it value
-$npcs["Sydney"].purity = 100
+V.npcs["Sydney"].purity = 100
 
-if( $npcs.Sydney.purity == 20 ) {
+if( V.npcs.Sydney.purity == 20 ) {
     // ...
 }
 
 
 ```
 
+twee
 ```html
 <<if $npcs.Sydney.purity eq 20>>
     // ...
     <<set $npcs.Sydney.purity to 100>>
+<<endif>>
+
+<<if $NPCName[$NPCNameList.indexOf("Sydney")].purity eq 20>>
+    // ...
+    <<set $NPCName[$NPCNameList.indexOf("Sydney")].purity to 100>>
 <<endif>>
 ```
 

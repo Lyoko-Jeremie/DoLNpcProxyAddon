@@ -40,7 +40,11 @@ export class DoLNpcProxyAddon {
         if (
             (window.V.NPCName as NpcListProxy)?.tag === 'NpcListProxyTag' &&
             (window.V.NPCNameList as NpcNameListProxy)?.tag === 'NpcNameListProxyTag' &&
-            !isNil(window.V.npcs) && window.V.npcs.tag === 'NpcFastAccessorTag'
+            !isNil(window.V.npcs) && window.V.npcs.tag === 'NpcFastAccessorTag' &&
+            // to check it is the same gid, avoid it is recovered from save file
+            (window.V.NPCName as NpcListProxy).gui === this.npcProxyManager.gid &&
+            (window.V.NPCNameList as NpcNameListProxy).gui === this.npcProxyManager.gid &&
+            (window.V.npcs as NpcFastAccessor).gui === this.npcProxyManager.gid
         ) {
             // was setup ok
             return;
@@ -54,7 +58,7 @@ export class DoLNpcProxyAddon {
             window.V.NPCNameList
         );
 
-        // TODO check the V.NPCNameList, V.NPCName
+        // set the V.NPCNameList, V.NPCName
 
         window.V.NPCName = this.npcListProxy;
         window.V.NPCNameList = this.npcNameListProxy;

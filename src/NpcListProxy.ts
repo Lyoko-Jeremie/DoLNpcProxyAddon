@@ -1,7 +1,7 @@
 import {NpcInfo} from "./winDef";
 import {NpcItem, NpcProxyManager} from "./NpcProxyManager";
-import {clone} from "lodash";
-
+import {clone, flatten, flatMap, flattenDeep} from "lodash";
+import {Mixin} from 'ts-mixer';
 
 export class NpcListProxyTag {
     tag: string = "NpcListProxyTag";
@@ -9,6 +9,14 @@ export class NpcListProxyTag {
 
 export class NpcListIndexProxy extends NpcListProxyTag {
     thisProxy: typeof this;
+
+    get gui() {
+        return this.m.gid;
+    }
+
+    set gui(value) {
+        return; // ignore it
+    }
 
     constructor(
         protected m: NpcProxyManager,
@@ -118,17 +126,11 @@ export class NpcListReadOnlyProxy extends NpcListIndexProxy implements ReadonlyA
     }
 
     flat<A, D extends number = 1>(depth?: D): FlatArray<A, D>[] {
-        // TODO
-        console.error(`[NpcListProxy] flat not implemented!`,);
-        throw new Error(`[NpcListProxy] flat not implemented!`);
-        return [];
+        return this.m.readList().map(T => T.npcInfo).flat(depth) as any;
     }
 
     flatMap<U, This = undefined>(callback: (this: This, value: NpcInfo, index: number, array: NpcInfo[]) => (ReadonlyArray<U> | U), thisArg?: This): U[] {
-        // TODO
-        console.error(`[NpcListProxy] flatMap not implemented!`,);
-        throw new Error(`[NpcListProxy] flatMap not implemented!`);
-        return [];
+        return this.m.readList().map(T => T.npcInfo).flatMap(callback);
     }
 
     forEach(callbackfn: (value: NpcInfo, index: number, array: NpcInfo[]) => void, thisArg?: any): void {
@@ -148,10 +150,7 @@ export class NpcListReadOnlyProxy extends NpcListIndexProxy implements ReadonlyA
     }
 
     join(separator?: string): string {
-        // TODO
-        console.error(`[NpcListProxy] join not implemented!`, [separator]);
-        throw new Error(`[NpcListProxy] join not implemented!`);
-        return "";
+        return this.m.readList().map(T => T.npcInfo).join(separator);
     }
 
     keys(): IterableIterator<number> {
@@ -221,6 +220,9 @@ export class NpcListReadOnlyProxy extends NpcListIndexProxy implements ReadonlyA
         return this.m.values();
     }
 
+    getReadOnlyArrayRef(): ReadonlyArray<NpcInfo> {
+        return this.m.readList().map(T => T.npcInfo);
+    }
 }
 
 export class NpcListProxy extends NpcListReadOnlyProxy implements Array<NpcInfo> {
@@ -267,9 +269,9 @@ export class NpcListProxy extends NpcListReadOnlyProxy implements Array<NpcInfo>
     }
 
     shift(): NpcInfo | undefined {
-        // TODO
-        console.error(`[NpcListProxy] shift not implemented!`,);
-        throw new Error(`[NpcListProxy] shift not implemented!`);
+        if (this.length > 0) {
+            return this.m.deleteByIndex([0])[0].npcInfo;
+        }
         return undefined;
     }
 
@@ -291,10 +293,32 @@ export class NpcListProxy extends NpcListReadOnlyProxy implements Array<NpcInfo>
     }
 
     unshift(...items: NpcInfo[]): number {
-        // TODO
-        console.error(`[NpcListProxy] unshift not implemented!`,);
-        throw new Error(`[NpcListProxy] unshift not implemented!`);
-        return 0;
+        this.m.push_front_many(items);
+        return this.length;
     }
 
+    deleteBy(predicate: (value: NpcInfo, index: number, array: NpcInfo[]) => boolean, thisArg?: any): NpcInfo[] {
+        const rr = this.m.readList();
+        const aa = rr.map(T => T.npcInfo);
+        const deletedItem: NpcItem[] = [];
+        for (let i = rr.length - 1; i >= 0; i--) {
+            if (predicate.call(thisArg, rr[i].npcInfo, i, aa)) {
+                deletedItem.push(rr[i]);
+            }
+        }
+        this.m.deleteByIndex(deletedItem.map(T => T.index));
+        this.m.reCalcOrder();
+        return deletedItem.map(T => T.npcInfo);
+    }
+}
+
+
+// https://github.com/tannerntannern/ts-mixer
+export class NpcListProxyWithSc2Polyfill extends Mixin(NpcListProxy) {
+    // empty
+
+    // used by js when JSON.stringify()
+    toJSON() {
+        return this.m.readList().map(T => T.npcInfo);
+    }
 }

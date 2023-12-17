@@ -1,10 +1,14 @@
 import type {LogWrapper} from "../../../dist-BeforeSC2/ModLoadController";
 import type {SC2DataManager} from "../../../dist-BeforeSC2/SC2DataManager";
 import type {ModUtils} from "../../../dist-BeforeSC2/Utils";
-import {isArray, isNil, isNumber, isString} from 'lodash';
+import {isArray, isNil, isNumber, isString, clone} from 'lodash';
 import {NpcInfo} from "./winDef";
 import {CustomIterableIterator, CustomReadonlyMapHelper} from "./CustomReadonlyMapHelper";
 
+// https://stackoverflow.com/questions/58325771/how-to-generate-random-hex-string-in-javascript
+const genRandomHex = (size: number) => [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+
+const NpcProxyManagerCoreGidLength = 32;
 
 export interface NpcItem {
     /**
@@ -28,12 +32,18 @@ export interface NpcItem {
 export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number, NpcInfo> {
     protected abstract logger: LogWrapper;
 
-    private nextId = 0;
+    gid: string = genRandomHex(NpcProxyManagerCoreGidLength);
+    protected nextId = 0;
 
-    private npc: Map<string, NpcItem> = new Map<string, NpcItem>();
-    private npcIndex: Map<number, NpcItem> = new Map<number, NpcItem>();
-    private npcList: NpcItem[] = [];
-    private npcAlias: Map<string, NpcItem> = new Map<string, NpcItem>();
+    protected npc: Map<string, NpcItem> = new Map<string, NpcItem>();
+    protected npcIndex: Map<number, NpcItem> = new Map<number, NpcItem>();
+    protected npcList: NpcItem[] = [];
+    protected npcAlias: Map<string, NpcItem> = new Map<string, NpcItem>();
+
+    // the npc name only in `NPCNameList`(npc name) but not in `NPCName`(named npc data)
+    // it must not have data
+    // when the data is ready, it must be removed
+    protected npcNamePlaceholder: string[] = [];
 
     cleanAll() {
         this.nextId = 0;
@@ -41,6 +51,8 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
         this.npcIndex.clear();
         this.npcList = [];
         this.npcAlias.clear();
+        this.npcNamePlaceholder = [];
+        this.gid = genRandomHex(NpcProxyManagerCoreGidLength);
         this.checkDataValid();
     }
 
@@ -95,6 +107,14 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
                     this.logger.error(`[NpcProxyManager] checkDataValid failed! npcAlias not same.`);
                     return false;
                 }
+            }
+        }
+        // check npcNamePlaceholder must not have data
+        for (const nn of this.npcNamePlaceholder) {
+            if (this.npc.has(nn) || this.npcAlias.has(nn)) {
+                console.error(`[NpcProxyManager] checkDataValid failed! npcNamePlaceholder has data.`, [nn]);
+                this.logger.error(`[NpcProxyManager] checkDataValid failed! npcNamePlaceholder has data.`);
+                return false;
             }
         }
         return true;
@@ -155,6 +175,9 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
         if (!npcItem.alias.includes(alias)) {
             npcItem.alias.push(alias);
             this.npcAlias.set(alias, npcItem);
+            if (this.npcNamePlaceholder.find(T => T === alias)) {
+                this.npcNamePlaceholder.splice(this.npcNamePlaceholder.findIndex(T => T === alias), 1);
+            }
         }
         this.checkDataValid();
     }
@@ -199,6 +222,9 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
         this.npc.set(npcItem.name, npcItem);
         this.npcIndex.set(npcItem.index, npcItem);
         this.npcList.push(npcItem);
+        if (this.npcNamePlaceholder.find(T => T === npcItem.name)) {
+            this.npcNamePlaceholder.splice(this.npcNamePlaceholder.findIndex(T => T === npcItem.name), 1);
+        }
         this.checkDataValid();
     }
 
@@ -274,7 +300,154 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
 
 }
 
-export class NpcProxyManager extends NpcProxyManagerCore {
+export abstract class NpcProxyManagerCoreExFunction extends NpcProxyManagerCore {
+
+    /**
+     * use the npcList index to re calc index data
+     * only by npcList
+     */
+    reCalcOrder() {
+        if (this.npcList.every((T, i) => T.index === i)) {
+            // all ok
+            return false;
+        }
+        const arr = clone(this.npcList);
+        arr.sort((a, b) => a.index - b.index);
+        arr.forEach((T, i) => {
+            T.index = i;
+        });
+        this.cleanAll();
+        arr.forEach(T => {
+            this.push(T.npcInfo);
+        });
+        this.checkDataValid();
+        return true;
+    }
+
+    /**
+     *
+     * @param index list of index need to be deleted
+     * @return deleted items
+     */
+    deleteByIndex(index: number[]) {
+        const rm: NpcItem[] = [];
+        const ls: NpcItem[] = [];
+        for (const n of this.npcList) {
+            if (index.includes(n.index)) {
+                rm.push(n);
+            } else {
+                ls.push(n);
+            }
+        }
+        this.npcList = ls;
+        this.reCalcOrder();
+        this.checkDataValid();
+        return rm;
+    }
+
+    /**
+     *
+     * @param v list items need to be deleted, the item must be the same ref of target
+     * @return deleted items
+     */
+    deleteByValue(v: NpcInfo[]) {
+        const rm: NpcItem[] = [];
+        const ls: NpcItem[] = [];
+        for (const n of this.npcList) {
+            if (v.includes(n.npcInfo)) {
+                rm.push(n);
+            } else {
+                ls.push(n);
+            }
+        }
+        this.npcList = ls;
+        this.reCalcOrder();
+        this.checkDataValid();
+        return rm;
+    }
+
+    /**
+     *
+     * @param s list of name need to be deleted
+     * @return deleted items
+     */
+    deleteByName(s: string[]) {
+        const rm: NpcItem[] = [];
+        const ls: NpcItem[] = [];
+        for (const T of this.npcList) {
+            if (
+                !s.includes(T.name) && !T.alias.find(N => s.includes(N))
+            ) {
+                ls.push(T);
+            } else {
+                rm.push(T);
+            }
+        }
+        this.npcList = ls;
+        this.reCalcOrder();
+        this.checkDataValid();
+        return rm;
+    }
+
+    push_front_many(npcInfo: NpcInfo[]) {
+        this.checkDataValid();
+        const nnn = npcInfo.filter(T => {
+            if (this.npc.has(T.nam)) {
+                console.error(`[NpcProxyManager] push_front npc[${T.nam}] already exists!`, [T]);
+                this.logger.error(`[NpcProxyManager] push_front npc[${T.nam}] already exists!`);
+                return false;
+            }
+            return true;
+        }).map((T, i) => {
+            if (this.npcNamePlaceholder.find(N => N === T.nam)) {
+                this.npcNamePlaceholder.splice(this.npcNamePlaceholder.findIndex(N => N === T.nam), 1);
+            }
+            return {
+                index: i,
+                name: T.nam,
+                npcInfo: T,
+                alias: [],
+            };
+        });
+        this.npcList.forEach(T => T.index += nnn.length);
+        this.npcList.unshift(...nnn);
+        this.reCalcOrder();
+        this.checkDataValid();
+    }
+
+    push_front(npcInfo: NpcInfo) {
+        this.checkDataValid();
+        if (this.npc.has(npcInfo.nam)) {
+            console.error(`[NpcProxyManager] push_front npc[${npcInfo.nam}] already exists!`, [npcInfo]);
+            this.logger.error(`[NpcProxyManager] push_front npc[${npcInfo.nam}] already exists!`);
+            return;
+        }
+        const npcItem: NpcItem = {
+            index: 0,
+            name: npcInfo.nam,
+            npcInfo: npcInfo,
+            alias: [],
+        };
+        this.npcList.forEach(T => ++T.index);
+        this.npcList.unshift(npcItem);
+        if (this.npcNamePlaceholder.find(T => T === npcItem.name)) {
+            this.npcNamePlaceholder.splice(this.npcNamePlaceholder.findIndex(T => T === npcItem.name), 1);
+        }
+        this.reCalcOrder();
+        this.checkDataValid();
+    }
+
+    pop_front() {
+        this.checkDataValid();
+        this.npcList.forEach(T => T.index);
+        this.npcList.shift();
+        this.reCalcOrder();
+        this.checkDataValid();
+    }
+
+}
+
+export class NpcProxyManager extends NpcProxyManagerCoreExFunction {
     protected logger: LogWrapper;
 
     constructor(
@@ -316,4 +489,3 @@ export class NpcProxyManager extends NpcProxyManagerCore {
     }
 
 }
-

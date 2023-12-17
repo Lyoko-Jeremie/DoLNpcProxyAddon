@@ -91,6 +91,10 @@ interface V {
     npcs: NpcFastAccessor;
 }
 
+interface C {
+    // npc: NpcFastAccessor;
+}
+
 declare global {
     interface Window {
         modUtils: ModUtils;
@@ -104,5 +108,6 @@ declare global {
         SugarCube: SugarCube;
 
         V: V;
+        C: C;
     }
 }

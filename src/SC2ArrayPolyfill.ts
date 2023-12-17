@@ -6,12 +6,18 @@ import {NpcInfo} from "./winDef";
 // tell the type system we have `Array` function
 // but we not actually implement it
 // the `Array` function will be implement by the other part when `mixin`
-export interface SC2ArrayPolyfill<T> extends Array<T> {
+export interface SC2ArrayPolyfillBase<T> extends Array<T> {
     m: NpcProxyManager;
 
     getReadOnlyArrayRef(): ReadonlyArray<T>;
 
     deleteBy(predicate: (value: T, index: number, array: T[]) => boolean, thisArg?: any): T[];
+
+    deleteByObj(v: T[]): T[];
+
+}
+
+export interface SC2ArrayPolyfill<T> extends SC2ArrayPolyfillBase<T> {
 }
 
 // all the function come from SugarCube-2 `src/lib/extensions.js`
@@ -90,15 +96,15 @@ export abstract class SC2ArrayPolyfill<T> {
     /*
         Removes and returns all of the given elements from the array.
     */
-    delete(...args: number[]) {
-        this.m.deleteByIndex(args);
+    delete(...args: T[]) {
+        return this.deleteByObj(args);
     }
 
     /*
         Removes and returns all of the elements at the given indices from the array.
     */
-    deleteAt(...args: any[]) {
-        this.m.deleteByValue(args);
+    deleteAt(...args: number[]) {
+        this.m.deleteByIndex(args);
     }
 
     /*

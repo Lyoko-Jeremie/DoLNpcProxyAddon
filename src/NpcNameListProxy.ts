@@ -2,6 +2,7 @@ import {NpcItem, NpcProxyManager} from "./NpcProxyManager";
 import {isNil, isString, parseInt} from "lodash";
 import {Mixin} from 'ts-mixer';
 import {NpcInfo} from "./winDef";
+import {SC2ArrayPolyfill, SC2ArrayPolyfillBase} from "./SC2ArrayPolyfill";
 
 
 export class NpcNameListProxyTag {
@@ -20,7 +21,7 @@ export class NpcNameListIndexProxy extends NpcNameListProxyTag {
     }
 
     constructor(
-        protected m: NpcProxyManager,
+        public m: NpcProxyManager,
     ) {
         super();
         this.thisProxy = new Proxy(this, {
@@ -229,7 +230,7 @@ export class NpcNameListReadOnlyProxy extends NpcNameListIndexProxy implements R
 }
 
 
-export class NpcNameListProxy extends NpcNameListReadOnlyProxy implements Array<string> {
+export class NpcNameListProxy extends NpcNameListReadOnlyProxy implements Array<string>, SC2ArrayPolyfillBase<string> {
     constructor(
         m: NpcProxyManager,
     ) {
@@ -237,18 +238,15 @@ export class NpcNameListProxy extends NpcNameListReadOnlyProxy implements Array<
     }
 
     pop(): string | undefined {
-        // TODO
-        // // redirect to parent
-        // return this.m.pop()?.npcInfo;
-        return undefined;
+        // redirect to parent
+        return this.m.popNpcNamePlaceholder();
     }
 
     push(...items: string[]): number {
-        // TODO
-        // // redirect to parent
-        // for (const item of items) {
-        //     this.m.push(item);
-        // }
+        // redirect to parent
+        for (const item of items) {
+            this.m.addNpcNamePlaceholder(item);
+        }
         return this.length;
     }
 
@@ -317,6 +315,12 @@ export class NpcNameListProxy extends NpcNameListReadOnlyProxy implements Array<
         this.m.deleteByIndex(deletedItem.map(T => T.index));
         this.m.reCalcOrder();
         return deletedItem.map(T => T.name);
+    }
+
+    deleteByObj(v: string[]): string[] {
+        return this.deleteBy((value, index, array) => {
+            return v.includes(value);
+        });
     }
 }
 

@@ -2,6 +2,7 @@ import {NpcInfo} from "./winDef";
 import {NpcItem, NpcProxyManager} from "./NpcProxyManager";
 import {clone, flatten, flatMap, flattenDeep} from "lodash";
 import {Mixin} from 'ts-mixer';
+import {SC2ArrayPolyfill, SC2ArrayPolyfillBase} from "./SC2ArrayPolyfill";
 
 export class NpcListProxyTag {
     tag: string = "NpcListProxyTag";
@@ -19,7 +20,7 @@ export class NpcListIndexProxy extends NpcListProxyTag {
     }
 
     constructor(
-        protected m: NpcProxyManager,
+        public m: NpcProxyManager,
     ) {
         super();
         this.thisProxy = new Proxy(this, {
@@ -225,7 +226,7 @@ export class NpcListReadOnlyProxy extends NpcListIndexProxy implements ReadonlyA
     }
 }
 
-export class NpcListProxy extends NpcListReadOnlyProxy implements Array<NpcInfo> {
+export class NpcListProxy extends NpcListReadOnlyProxy implements Array<NpcInfo>, SC2ArrayPolyfillBase<NpcInfo> {
     constructor(
         m: NpcProxyManager,
     ) {
@@ -309,6 +310,12 @@ export class NpcListProxy extends NpcListReadOnlyProxy implements Array<NpcInfo>
         this.m.deleteByIndex(deletedItem.map(T => T.index));
         this.m.reCalcOrder();
         return deletedItem.map(T => T.npcInfo);
+    }
+
+    deleteByObj(v: NpcInfo[]): NpcInfo[] {
+        return this.deleteBy((value, index, array) => {
+            return v.includes(value);
+        });
     }
 }
 

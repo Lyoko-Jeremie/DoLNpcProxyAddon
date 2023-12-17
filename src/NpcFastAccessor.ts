@@ -48,7 +48,7 @@ type OtherProperties = {
     [key in Exclude<string, ExcludeKeys>]?: NpcInfo;
 };
 
-interface SpecialProperties extends NpcFastAccessorBase{
+interface SpecialProperties extends NpcFastAccessorBase {
 
 }
 
@@ -127,6 +127,10 @@ export class NpcFastAccessorEx extends NpcFastAccessor {
     // used by js when JSON.stringify()
     // @ts-ignore
     toJSON() {
-        return undefined;
+        const obj: { [k: string]: NpcInfo } = {};
+        for (const [name, npc] of this.m.entriesName()) {
+            obj[name] = npc;
+        }
+        return obj;
     }
 }

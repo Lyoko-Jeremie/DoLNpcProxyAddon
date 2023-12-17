@@ -120,6 +120,22 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
         return true;
     }
 
+    public addNpcNamePlaceholder(name: string) {
+        if (this.npcNamePlaceholder.find(T => T === name)) {
+            return;
+        }
+        if (this.npc.has(name) || this.npcAlias.has(name)) {
+            console.error(`[NpcProxyManager] addNpcNamePlaceholder failed! name already exists.`, [name]);
+            this.logger.error(`[NpcProxyManager] addNpcNamePlaceholder failed! name already exists.`);
+            return;
+        }
+        this.npcNamePlaceholder.push(name);
+    }
+
+    public popNpcNamePlaceholder() {
+        return this.npcNamePlaceholder.pop();
+    }
+
     /**
      *
      * @param key get by `NpcItem.name` or `NpcItem.index`
@@ -301,6 +317,10 @@ export abstract class NpcProxyManagerCore extends CustomReadonlyMapHelper<number
 }
 
 export abstract class NpcProxyManagerCoreExFunction extends NpcProxyManagerCore {
+
+    updateData(name: string, npcInfo: NpcInfo) {
+        this.set(name, npcInfo);
+    }
 
     /**
      * use the npcList index to re calc index data
